@@ -1,5 +1,6 @@
 'use client';
 
+import NavbarAdmin from "@/components/NavbarAdmin";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -14,9 +15,10 @@ import {
 
 const adminNav = [
   { label: "Dashboard", href: "/dashboard/admin", icon: FiHome },
-  { label: "Kelola Klien", href: "/clients", icon: FiUsers },
-  { label: "Kelola Produk", href: "/products", icon: FiPackage },
-  { label: "Semua Invoice", href: "/invoices", icon: FiFileText },
+  { label: "My Profile", href: "/profile", icon: FiUsers },
+  { label: "Manage Client", href: "/clients", icon: FiUsers },
+  { label: "Manage Product", href: "/products", icon: FiPackage },
+  { label: "Manage Invoice", href: "/invoices", icon: FiFileText },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -24,8 +26,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <html lang="id">
-      <body className="flex bg-gray-50 min-h-screen text-sm">
+    <div className="flex-col">
+      <NavbarAdmin />
+      <div className="flex min-h-screen bg-gray-100 text-sm">
         {/* Sidebar */}
         <aside
           className={`bg-blue-900 text-white min-h-screen p-4 space-y-4 flex flex-col transition-[width] duration-300 ease-in-out ${
@@ -51,8 +54,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Link
                   key={href}
                   href={href}
-                  title={collapsed ? label : undefined} // tampilkan tooltip saat collapse
-                  className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-blue-800 transition-colors duration-200 ${
+                  title={collapsed ? label : undefined}
+                  className={`flex items-center ${!collapsed ? "px-3 py-2 gap-2" : "my-2"} rounded hover:bg-blue-800 transition-colors duration-200 ${
                     isActive ? "bg-blue-800 font-semibold" : ""
                   }`}
                 >
@@ -64,9 +67,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </nav>
         </aside>
 
-        {/* Content */}
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
-      </body>
-    </html>
+        {/* Main Content */}
+        <main className="flex-1 p-6 overflow-auto">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }

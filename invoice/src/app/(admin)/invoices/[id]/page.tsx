@@ -15,10 +15,11 @@ export default function InvoiceDetailPage() {
   const fetchInvoice = async () => {
     const token = localStorage.getItem('accessToken');
     try {
-      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/${id}`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setInvoice(res.data);
+      setInvoice(response.data.data);
+      console.log(response.data.data);
     } catch (error) {
       console.error('Failed to fetch invoice', error);
       router.push('/invoices');
@@ -67,7 +68,6 @@ export default function InvoiceDetailPage() {
     }
   };
 
-
   useEffect(() => {
     fetchInvoice();
   }, []);
@@ -77,25 +77,25 @@ export default function InvoiceDetailPage() {
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Invoice #{invoice.invoiceNumber}</h1>
+        <h1 className="text-2xl font-bold text-gray-700">Invoice #{invoice.invoiceNumber}</h1>
         <div className="text-sm text-gray-600">Status: {invoice.status}</div>
       </div>
 
       {/* PDF Preview */}
-      <div ref={invoiceRef} className="bg-white border p-6 rounded shadow-sm text-sm">
+      <div ref={invoiceRef} className="bg-white border p-6 rounded shadow-sm text-sm text-gray-700">
         <h2 className="text-xl font-semibold mb-2">Invoice Detail</h2>
 
         <div className="mb-4">
-          <p><strong>Client:</strong> {invoice.client.name}</p>
-          <p><strong>Email:</strong> {invoice.client.email}</p>
-          <p><strong>Phone:</strong> {invoice.client.phoneNumber}</p>
+          <p><strong>Client:</strong> {invoice.clientName}</p>
+          <p><strong>Email:</strong> {invoice.clientEmail}</p>
+          <p><strong>Phone:</strong> {invoice.clientAddress}</p>
           <p><strong>Issue Date:</strong> {invoice.issueDate}</p>
           <p><strong>Due Date:</strong> {invoice.dueDate}</p>
         </div>
 
         <h3 className="font-bold mb-1">Items</h3>
         <table className="w-full border mb-2">
-          <thead className="bg-gray-100">
+          <thead className="bg-gray-100 text-left">
             <tr>
               <th className="text-left p-2">Product</th>
               <th>Unit</th>
@@ -106,7 +106,7 @@ export default function InvoiceDetailPage() {
           <tbody>
             {invoice.items.map((item) => (
               <tr key={item.id} className="border-t">
-                <td className="p-2">{item.product.name}</td>
+                <td className="p-2">{item.productName}</td>
                 <td>${item.unitPrice.toFixed(2)}</td>
                 <td>{item.quantity}</td>
                 <td>${item.totalPrice.toFixed(2)}</td>

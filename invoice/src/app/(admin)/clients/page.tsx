@@ -11,13 +11,12 @@ export default function ClientsPage() {
 
   const fetchClients = async () => {
     try {
-      const token = localStorage.getItem('token');
-      console.log(token);
+      const token = localStorage.getItem('accessToken');
       
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setClients(response.data);
+      setClients(response.data.data);
     } catch (err) {
       console.error('Failed to fetch clients', err);
     } finally {
@@ -27,7 +26,7 @@ export default function ClientsPage() {
 
   const deleteClient = async (id: number) => {
     if (!confirm('Delete this client?')) return;
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/clients/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -43,18 +42,18 @@ export default function ClientsPage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Clients</h1>
+        <h1 className="text-2xl text-gray-700 font-bold">Clients</h1>
         <Link href="/clients/form">
           <button className="bg-blue-600 text-white px-4 py-2 rounded-md">Add Client</button>
         </Link>
       </div>
 
       {clients.length === 0 ? (
-        <p>No clients yet.</p>
+        <p className='text-gray-700'>No clients yet.</p>
       ) : (
-        <table className="w-full table-auto border">
+        <table className="w-full border table-auto text-gray-700">
           <thead>
-            <tr className="bg-gray-200 text-left">
+            <tr className="bg-gray-200 text-gray-700 text-left">
               <th className="p-2">Name</th>
               <th>Email</th>
               <th>Phone</th>
@@ -63,7 +62,7 @@ export default function ClientsPage() {
           </thead>
           <tbody>
             {clients.map((client) => (
-              <tr key={client.id} className="border-t">
+              <tr key={client.id} className="border-t text-gray-700">
                 <td className="p-2">{client.name}</td>
                 <td>{client.email}</td>
                 <td>{client.phoneNumber}</td>

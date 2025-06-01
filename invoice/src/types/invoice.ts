@@ -8,7 +8,9 @@ export interface InvoiceItemDTO {
 
 export interface InvoiceItem {
   id: number;
-  product: Product;
+  productId: number;
+  productName: string;
+  description: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -17,12 +19,19 @@ export interface InvoiceItem {
 export interface Invoice {
   id: number;
   invoiceNumber: string;
+  totalAmount: number;
   issueDate: string;
   dueDate: string;
   status: 'PENDING' | 'PAID' | 'OVERDUE';
   paymentTerms: 'MONTHLY' | 'WEEKLY';
   isRecurring: boolean;
-  totalAmount: number;
-  client: Client;
+  nextRecurringDate: string | null;
+
+  clientId: number;
+  clientName: string;
+  clientEmail: string;
+  clientPhoneNumber: string;
+  clientAddress: string;
+
   items: InvoiceItem[];
 }

@@ -26,7 +26,7 @@ export default function Navbar() {
   return (
     <nav className="bg-white border-b px-6 py-3 shadow-sm flex justify-between items-center">
       <Link href="/" className="text-lg font-bold text-blue-600">
-        InvoiceApp
+        MyInvoice
       </Link>
 
       <div className="space-x-4 text-sm">

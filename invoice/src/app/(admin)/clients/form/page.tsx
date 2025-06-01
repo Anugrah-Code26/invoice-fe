@@ -5,78 +5,87 @@ import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Product } from '@/types/product';
+import { Client } from '@/types/client';
 
-export default function ProductForm() {
+export default function ClientForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const productId = params.get('id');
+  const clientId = params.get('id');
 
-  const [initialValues, setInitialValues] = useState<Product>({
+  const [initialValues, setInitialValues] = useState<Client>({
     id: 0,
     name: '',
-    description: '',
-    price: 0,
-    deleted: false,
+    email: '',
+    address: '',
+    phoneNumber: '',
+    paymentPreferences: '',
   });
 
+  const fieldLabels: Record<keyof Client, string> = {
+    id: 'ID',
+    name: 'Name',
+    email: 'Email',
+    address: 'Address',
+    phoneNumber: 'Phone Number',
+    paymentPreferences: 'Payment Preferences',
+  };
+
   useEffect(() => {
-    if (productId) {
-      const fetchProduct = async () => {
+    if (clientId) {
+      const fetchClient = async () => {
         const token = localStorage.getItem('accessToken');
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/products/${productId}`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients/${clientId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setInitialValues(response.data);
+        setInitialValues(response.data.data);
       };
-      fetchProduct();
+      fetchClient();
     }
-  }, [productId]);
+  }, [clientId]);
 
-  const formik = useFormik<Product>({
+  const formik = useFormik({
     enableReinitialize: true,
     initialValues,
     validationSchema: Yup.object({
       name: Yup.string().required('Required'),
-      description: Yup.string(),
-      price: Yup.number().required('Required').positive('Must be positive'),
-      deleted: Yup.boolean(),
-      id: Yup.number(),
+      email: Yup.string().email('Invalid email').required('Required'),
+      address: Yup.string(),
+      phoneNumber: Yup.string(),
+      paymentPreferences: Yup.string(),
     }),
     onSubmit: async (values) => {
       const token = localStorage.getItem('accessToken');
-      if (productId) {
+      if (clientId) {
         await axios.put(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/products/${productId}`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients/${clientId}`,
           values,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
         await axios.post(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/products`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`,
           values,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }
-      router.push('/products');
+      router.push('/clients');
     },
   });
 
-  // Type-safe list of form fields
-  const fields: (keyof Pick<Product, 'name' | 'description' | 'price'>)[] = ['name', 'description', 'price'];
+  const fields: (keyof Client)[] = ['name', 'email', 'address', 'phoneNumber', 'paymentPreferences'];
 
   return (
     <div className="max-w-xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">{productId ? 'Edit' : 'Add'} Product</h1>
+      <h1 className="text-2xl text-gray-700 font-bold mb-4">{clientId ? 'Edit' : 'Add'} Client</h1>
       <form onSubmit={formik.handleSubmit} className="space-y-4">
         {fields.map((field) => (
           <div key={field}>
-            <label className="block capitalize">{field}</label>
+            <label className="block capitalize text-gray-700">{fieldLabels[field]}</label>
             <input
-              type={field === 'price' ? 'number' : 'text'}
+              type="text"
               {...formik.getFieldProps(field)}
-              className="w-full border p-2 rounded"
+              className="w-full border border-gray-300 bg-white p-2 text-gray-700 rounded"
             />
             {formik.touched[field] && formik.errors[field] && (
               <p className="text-red-500 text-sm">{formik.errors[field]}</p>
@@ -84,7 +93,7 @@ export default function ProductForm() {
           </div>
         ))}
         <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
-          {productId ? 'Update' : 'Create'}
+          {clientId ? 'Update' : 'Add'}
         </button>
       </form>
     </div>

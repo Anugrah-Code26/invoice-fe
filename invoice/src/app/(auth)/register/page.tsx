@@ -2,76 +2,71 @@
 
 import { useState } from 'react';
 import axios from 'axios';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const formik = useFormik({
-    initialValues: {
-      email: '',
-      password: '',
-      name: '',
-      address: '',
-      phoneNumber: '',
-    },
-    validationSchema: Yup.object({
-      email: Yup.string().email('Invalid email').required('Required'),
-      password: Yup.string().min(6, 'Min 6 characters').required('Required'),
-      name: Yup.string().required('Required'),
-      address: Yup.string(),
-      phoneNumber: Yup.string(),
-    }),
-    onSubmit: async (values) => {
-      try {
-        await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/register`, values);
-        router.push('/login');
-      } catch (err: any) {
-        setError(err.response?.data || 'Registration failed');
-      }
-    },
-  });
-
-  const fields: (keyof typeof formik.values)[] = ['email', 'password', 'name', 'address', 'phoneNumber'];
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/register/request`, { email });
+      setSent(true);
+      toast.success('Verification link has been sent to your email!');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to send verification link');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Register</h1>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4 text-gray-700">
+      <div className="bg-white w-full max-w-md p-8 rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Create Account
+        </h1>
 
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-
-        <form onSubmit={formik.handleSubmit} className="space-y-4">
-          {fields.map((field) => (
-            <div key={field}>
-              <label className="block text-sm font-medium capitalize">
-                {field === 'phoneNumber' ? 'Phone Number' : field}
+        {sent ? (
+          <div className="text-center text-gray-700">
+            Please check your inbox or spam folder.
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label htmlFor="email" className="block text-sm text-gray-700 font-medium mb-1">
+                Email
               </label>
               <input
-                type={field === 'password' ? 'password' : 'text'}
-                {...formik.getFieldProps(field)}
-                className={`w-full mt-1 px-3 py-2 border rounded-md ${
-                  formik.touched[field] && formik.errors[field]
-                    ? 'border-red-500'
-                    : 'border-gray-300'
-                }`}
+                id="email"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="Enter your active email"
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               />
-              {formik.touched[field] && formik.errors[field] && (
-                <p className="text-red-500 text-xs">{formik.errors[field]}</p>
-              )}
             </div>
-          ))}
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md transition"
-          >
-            Register
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Sending...' : 'Send Verification Link'}
+            </button>
+          </form>
+        )}
+
+        <p className="mt-6 text-center text-sm text-gray-500">
+          Already have an account?{' '}
+          <a href="/login" className="text-blue-600 hover:underline font-medium">
+            Log in here
+          </a>
+        </p>
       </div>
     </div>
   );

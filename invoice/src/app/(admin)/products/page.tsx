@@ -34,17 +34,17 @@ export default function ProductsPage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Products</h1>
+        <h1 className="text-2xl font-bold text-gray-700">Products</h1>
         <Link href="/products/form">
           <button className="bg-blue-600 text-white px-4 py-2 rounded-md">Add Product</button>
         </Link>
       </div>
 
       {products.length === 0 ? (
-        <p>No products found.</p>
+        <p className='text-gray-700'>No products found.</p>
       ) : (
-        <table className="w-full border table-auto">
-          <thead className="bg-gray-200">
+        <table className="w-full border table-auto text-gray-700">
+          <thead className="bg-gray-200 text-gray-700 text-left">
             <tr>
               <th className="p-2">Name</th>
               <th>Description</th>
@@ -54,7 +54,7 @@ export default function ProductsPage() {
           </thead>
           <tbody>
             {products.map((product) => (
-              <tr key={product.id} className="border-t">
+              <tr key={product.id} className="border-t text-gray-700">
                 <td className="p-2">{product.name}</td>
                 <td>{product.description}</td>
                 <td>${product.price.toFixed(2)}</td>

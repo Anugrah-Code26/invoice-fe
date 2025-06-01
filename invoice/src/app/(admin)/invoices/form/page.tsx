@@ -16,15 +16,15 @@ export default function InvoiceForm() {
   const fetchData = async () => {
     const token = localStorage.getItem('accessToken');
     const [clientRes, productRes] = await Promise.all([
-      axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/clients`, {
+      axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`, {
         headers: { Authorization: `Bearer ${token}` },
       }),
-      axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/products`, {
+      axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`, {
         headers: { Authorization: `Bearer ${token}` },
       }),
     ]);
-    setClients(clientRes.data);
-    setProducts(productRes.data.filter((p: Product) => !p.deleted));
+    setClients(clientRes.data.data);
+    setProducts(productRes.data.data.filter((p: Product) => !p.deleted));
   };
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function InvoiceForm() {
     }),
     onSubmit: async (values) => {
       const token = localStorage.getItem('accessToken');
-      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/invoices`, values, {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices`, values, {
         headers: { Authorization: `Bearer ${token}` },
       });
       router.push('/invoices');
@@ -72,16 +72,16 @@ export default function InvoiceForm() {
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Create Invoice</h1>
+      <h1 className="text-2xl font-bold mb-4 text-gray-700">Create Invoice</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Select Client */}
         <div>
-          <label className="block font-medium">Client</label>
+          <label className="block font-medium text-gray-700">Client</label>
           <select
             name="clientId"
             value={values.clientId}
             onChange={handleChange}
-            className="w-full border p-2 rounded"
+            className="w-full border p-2 rounded text-gray-700"
           >
             <option value="">-- Select Client --</option>
             {clients.map((client) => (
@@ -94,12 +94,12 @@ export default function InvoiceForm() {
 
         {/* Payment Terms */}
         <div>
-          <label className="block font-medium">Payment Terms</label>
+          <label className="block font-medium text-gray-700">Payment Terms</label>
           <select
             name="paymentTerms"
             value={values.paymentTerms}
             onChange={handleChange}
-            className="w-full border p-2 rounded"
+            className="w-full border p-2 rounded text-gray-700"
           >
             <option value="MONTHLY">Monthly</option>
             <option value="WEEKLY">Weekly</option>
@@ -107,7 +107,7 @@ export default function InvoiceForm() {
         </div>
 
         {/* Is Recurring */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-gray-700">
           <input
             type="checkbox"
             name="isRecurring"
@@ -123,9 +123,9 @@ export default function InvoiceForm() {
             name="items"
             render={(arrayHelpers) => (
               <div className="space-y-4">
-                <label className="block font-medium">Items</label>
+                <label className="block font-medium text-gray-700">Items</label>
                 {values.items.map((item, index) => (
-                  <div key={index} className="flex gap-2 items-center">
+                  <div key={index} className="flex gap-2 items-center text-gray-700">
                     <select
                       name={`items[${index}].productId`}
                       value={item.productId}
@@ -145,7 +145,7 @@ export default function InvoiceForm() {
                       name={`items[${index}].quantity`}
                       value={item.quantity}
                       onChange={handleChange}
-                      className="border p-2 rounded w-24"
+                      className="border p-2 rounded w-24 text-gray-700"
                       min={1}
                     />
 
@@ -172,7 +172,7 @@ export default function InvoiceForm() {
         </FormikProvider>
 
         {/* Total */}
-        <div className="text-right font-semibold text-lg">
+        <div className="text-right font-semibold text-lg text-gray-700">
           Total: ${calculateTotal().toFixed(2)}
         </div>
 
