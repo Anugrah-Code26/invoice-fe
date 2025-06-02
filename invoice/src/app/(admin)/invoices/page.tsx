@@ -138,7 +138,7 @@ export default function InvoicesPage() {
             <button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-1"
+              className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900"
             >
               {loading && <FiLoader className="animate-spin" />}
               Search
@@ -146,7 +146,7 @@ export default function InvoicesPage() {
             <button
               type="button"
               onClick={handleReset}
-              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+              className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400"
               disabled={loading}
             >
               Reset

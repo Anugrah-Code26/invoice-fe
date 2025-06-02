@@ -5,6 +5,8 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 type FormValues = {
   name: string;
@@ -16,6 +18,7 @@ type FormValues = {
 export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   const formik = useFormik<FormValues>({
     initialValues: {
@@ -32,6 +35,7 @@ export default function ProfilePage() {
     }),
     onSubmit: async (values) => {
       try {
+        setSubmitLoading(true);
         const token = localStorage.getItem('accessToken');
         await axios.put(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/profile`,
@@ -40,10 +44,12 @@ export default function ProfilePage() {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        alert('Profile updated successfully');
+        toast.success('Profile updated successfully');
       } catch (error) {
         console.error(error);
-        alert('Failed to update profile');
+        toast.error('Failed to update profile');
+      } finally {
+        setSubmitLoading(false);
       }
     },
   });
@@ -62,7 +68,7 @@ export default function ProfilePage() {
         setLoading(false);
       } catch (error) {
         console.error(error);
-        alert('Failed to load profile');
+        toast.error('Failed to load profile');
       }
     };
     fetchProfile();
@@ -73,7 +79,8 @@ export default function ProfilePage() {
   const fields: (keyof FormValues)[] = ['name', 'email', 'phoneNumber', 'address'];
 
   return (
-    <div className="max-w-xl mx-auto p-6 text-gray-700">
+    <div className="max-w-xl mx-auto p-6 text-gray-700 bg-white rounded-xl">
+      <ToastContainer position="top-right" autoClose={3000} />
       <h1 className="text-2xl font-bold mb-4">Edit Profile</h1>
       <form onSubmit={formik.handleSubmit} className="space-y-4">
         {fields.map((field) => (
@@ -92,8 +99,12 @@ export default function ProfilePage() {
             )}
           </div>
         ))}
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
-          Update Profile
+        <button
+          type="submit"
+          className="w-full bg-blue-600 font-bold text-white px-4 py-2 rounded disabled:opacity-60"
+          disabled={submitLoading}
+        >
+          {submitLoading ? 'Updating...' : 'Update Profile'}
         </button>
       </form>
     </div>
