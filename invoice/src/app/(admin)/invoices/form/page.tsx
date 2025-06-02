@@ -5,6 +5,8 @@ import { useFormik, FieldArray, FormikProvider } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import { FiTrash2 } from 'react-icons/fi';
 import { Client } from '@/types/client';
 import { Product } from '@/types/product';
 
@@ -12,19 +14,24 @@ export default function InvoiceForm() {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchData = async () => {
-    const token = localStorage.getItem('accessToken');
-    const [clientRes, productRes] = await Promise.all([
-      axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-      axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-    ]);
-    setClients(clientRes.data.data);
-    setProducts(productRes.data.data.filter((p: Product) => !p.deleted));
+    try {
+      const token = localStorage.getItem('accessToken');
+      const [clientRes, productRes] = await Promise.all([
+        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      setClients(clientRes.data.data);
+      setProducts(productRes.data.data.filter((p: Product) => !p.deleted));
+    } catch (error) {
+      toast.error('Failed to fetch data');
+    }
   };
 
   useEffect(() => {
@@ -36,9 +43,7 @@ export default function InvoiceForm() {
       clientId: '',
       paymentTerms: 'MONTHLY',
       isRecurring: false,
-      items: [
-        { productId: '', quantity: 1 },
-      ],
+      items: [{ productId: '', quantity: 1 }],
     },
     validationSchema: Yup.object({
       clientId: Yup.string().required('Client is required'),
@@ -53,15 +58,23 @@ export default function InvoiceForm() {
         .min(1, 'At least one item is required'),
     }),
     onSubmit: async (values) => {
-      const token = localStorage.getItem('accessToken');
-      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices`, values, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      router.push('/invoices');
+      setIsLoading(true);
+      try {
+        const token = localStorage.getItem('accessToken');
+        await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices`, values, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        toast.success('Invoice created successfully!');
+        setTimeout(() => router.push('/invoices'), 1500);
+      } catch (error) {
+        toast.error('Failed to create invoice');
+      } finally {
+        setIsLoading(false);
+      }
     },
   });
 
-  const { values, handleChange, handleSubmit, setFieldValue } = formik;
+  const { values, handleChange, handleSubmit } = formik;
 
   const calculateTotal = () => {
     return values.items.reduce((sum, item) => {
@@ -71,10 +84,9 @@ export default function InvoiceForm() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl relative">
       <h1 className="text-2xl font-bold mb-4 text-gray-700">Create Invoice</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Select Client */}
         <div>
           <label className="block font-medium text-gray-700">Client</label>
           <select
@@ -92,7 +104,6 @@ export default function InvoiceForm() {
           </select>
         </div>
 
-        {/* Payment Terms */}
         <div>
           <label className="block font-medium text-gray-700">Payment Terms</label>
           <select
@@ -106,7 +117,6 @@ export default function InvoiceForm() {
           </select>
         </div>
 
-        {/* Is Recurring */}
         <div className="flex items-center gap-2 text-gray-700">
           <input
             type="checkbox"
@@ -117,7 +127,6 @@ export default function InvoiceForm() {
           <label>Recurring Invoice?</label>
         </div>
 
-        {/* Invoice Items */}
         <FormikProvider value={formik}>
           <FieldArray
             name="items"
@@ -151,10 +160,11 @@ export default function InvoiceForm() {
 
                     <button
                       type="button"
-                      className="text-red-600"
                       onClick={() => arrayHelpers.remove(index)}
+                      className="text-red-600 hover:text-red-800"
+                      title="Remove Item"
                     >
-                      Remove
+                      <FiTrash2 size={20} />
                     </button>
                   </div>
                 ))}
@@ -171,16 +181,16 @@ export default function InvoiceForm() {
           />
         </FormikProvider>
 
-        {/* Total */}
         <div className="text-right font-semibold text-lg text-gray-700">
           Total: ${calculateTotal().toFixed(2)}
         </div>
 
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          disabled={isLoading}
+          className="bg-blue-600 text-white font-bold px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
         >
-          Create Invoice
+          {isLoading ? 'Submitting...' : 'Create Invoice'}
         </button>
       </form>
     </div>

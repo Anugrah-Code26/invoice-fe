@@ -83,7 +83,7 @@ export default function ClientsPage() {
         type="text"
         value={search}
         onChange={handleSearchChange}
-        placeholder="Cari nama, email, atau no HP..."
+        placeholder="Find by name, email, or phone number..."
         className="mb-4 w-full border px-3 py-2 rounded text-sm text-gray-700"
       />
 
@@ -137,7 +137,7 @@ export default function ClientsPage() {
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete <strong>{clientToDelete.name}</strong>?
             </p>
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end gap-4">
               <button
                 onClick={() => {
                   setShowModal(false);
