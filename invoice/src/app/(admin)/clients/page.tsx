@@ -17,20 +17,24 @@ export default function ClientsPage() {
   const [email, setEmail] = useState(searchParams.get('email') || '');
   const [phoneNumber, setPhoneNumber] = useState(searchParams.get('phoneNumber') || '');
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [query, setQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
-  const fetchClients = async () => {
+  const fetchClients = async (options?: {
+    name?: string, email?: string, phoneNumber?: string, updateUrl?: boolean
+  }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
       const params = new URLSearchParams();
 
-      if (name) params.append('name', name);
-      if (email) params.append('email', email);
-      if (phoneNumber) params.append('phoneNumber', phoneNumber);
+      const nameFilter = options?.name !== undefined ? options.name : name
+      const emailFilter = options?.email !== undefined ? options.email : email
+      const phoneNumberFilter = options?.phoneNumber !== undefined ? options.phoneNumber : phoneNumber
+
+      if (nameFilter) params.append('name', nameFilter);
+      if (emailFilter) params.append('email', emailFilter);
+      if (phoneNumberFilter) params.append('phoneNumber', phoneNumberFilter);
 
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients?${params.toString()}`,
@@ -39,9 +43,10 @@ export default function ClientsPage() {
         }
       );
       setClients(response.data.data);
-      console.log(response.data);
       
-      router.replace(`/clients?${params.toString()}`, { scroll: false })
+      if (options?.updateUrl) {
+        router.replace(`/clients?${params.toString()}`, { scroll: false })
+      }
     } catch (error: any) {
       toast.error(`Failed to fetch clients: ${error.message || error}`);
     } finally {
@@ -63,8 +68,14 @@ export default function ClientsPage() {
     setEmail('');
     setPhoneNumber('');
     router.replace(`/clients`, { scroll: false });
-    fetchClients();
+    fetchClients({name: '', email:'', phoneNumber:'', updateUrl: true});
   };
+
+  // useEffect( () => {
+  //   if (!loading) {
+  //     fetchClients()
+  //   }
+  // }, [name, email, phoneNumber]);
 
   const openDeleteModal = (client: Client) => {
     setClientToDelete(client);

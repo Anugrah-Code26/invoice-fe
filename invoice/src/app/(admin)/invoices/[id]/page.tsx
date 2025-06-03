@@ -25,6 +25,7 @@ export default function InvoiceDetailPage() {
       });
       setInvoice(response.data.data);
     } catch (error) {
+      console.error('Error fetching invoice:', error);
       toast.error('Failed to fetch invoice.');
       router.push('/invoices');
     } finally {

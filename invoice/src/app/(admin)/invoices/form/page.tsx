@@ -41,13 +41,13 @@ export default function InvoiceForm() {
   const formik = useFormik({
     initialValues: {
       clientId: '',
-      paymentTerms: 'MONTHLY',
-      isRecurring: false,
+      paymentTerms: 'TODAY',
+      // isRecurring: false,
       items: [{ productId: '', quantity: 1 }],
     },
     validationSchema: Yup.object({
       clientId: Yup.string().required('Client is required'),
-      paymentTerms: Yup.string().oneOf(['MONTHLY', 'WEEKLY']),
+      paymentTerms: Yup.string().oneOf(['MONTHLY', 'WEEKLY', 'TODAY']),
       items: Yup.array()
         .of(
           Yup.object({
@@ -114,10 +114,11 @@ export default function InvoiceForm() {
           >
             <option value="MONTHLY">Monthly</option>
             <option value="WEEKLY">Weekly</option>
+            <option value="TODAY">Today</option>
           </select>
         </div>
 
-        <div className="flex items-center gap-2 text-gray-700">
+        {/* <div className="flex items-center gap-2 text-gray-700">
           <input
             type="checkbox"
             name="isRecurring"
@@ -125,7 +126,7 @@ export default function InvoiceForm() {
             onChange={handleChange}
           />
           <label>Recurring Invoice?</label>
-        </div>
+        </div> */}
 
         <FormikProvider value={formik}>
           <FieldArray
