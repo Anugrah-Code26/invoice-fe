@@ -39,6 +39,8 @@ export default function ClientsPage() {
         }
       );
       setClients(response.data.data);
+      console.log(response.data);
+      
       router.replace(`/clients?${params.toString()}`, { scroll: false })
     } catch (error: any) {
       toast.error(`Failed to fetch clients: ${error.message || error}`);
