@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import axios from 'axios';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
+import { signIn } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
@@ -28,33 +27,23 @@ export default function LoginPage() {
       password: Yup.string().required('Password is required'),
     }),
     onSubmit: async (values) => {
-      try {
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`,
-          values
-        );
+      const res = await signIn('credentials', {
+        redirect: false,
+        email: values.email,
+        password: values.password,
+      });
 
-        const { accessToken } = response.data.data;
-        localStorage.setItem('accessToken', accessToken);
-        Cookies.set('accessToken', accessToken);
-
+      if (res?.ok) {
         toast.success('Login successful! Redirecting...', {
           position: 'top-right',
           autoClose: 1500,
         });
 
-        const payload = JSON.parse(atob(accessToken.split('.')[1]));
-        const role = payload.role || payload.roles;
-
         setTimeout(() => {
-          if (role === 'ADMIN') {
-            router.push('/dashboard/admin');
-          } else {
-            router.push('/dashboard');
-          }
+          router.push('/dashboard/admin');
         }, 1600);
-      } catch (err: any) {
-        toast.error(err.response?.data?.message || 'Login failed', {
+      } else {
+        toast.error('Login failed. Please check your credentials.', {
           position: 'top-right',
           autoClose: 3000,
         });

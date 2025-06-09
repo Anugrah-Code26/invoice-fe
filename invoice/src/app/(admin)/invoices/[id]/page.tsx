@@ -6,10 +6,13 @@ import axios from 'axios';
 import { Invoice } from '@/types/invoice';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useSession } from 'next-auth/react';
 
 export default function InvoiceDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
+
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
@@ -17,9 +20,11 @@ export default function InvoiceDetailPage() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const fetchInvoice = async () => {
-    const token = localStorage.getItem('accessToken');
-    setLoading(true);
     try {
+      setLoading(true);
+      const token = session?.accessToken;
+      if (!token) throw new Error('No access token found');
+
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -34,7 +39,9 @@ export default function InvoiceDetailPage() {
   };
 
   const updateStatus = async (newStatus: 'PAID' | 'OVERDUE') => {
-    const token = localStorage.getItem('accessToken');
+    const token = session?.accessToken;
+    if (!token) throw new Error('No access token found');
+
     setUpdatingStatus(true);
     try {
       await axios.patch(
@@ -66,7 +73,9 @@ export default function InvoiceDetailPage() {
   // };
 
   const sendInvoiceEmail = async () => {
-    const token = localStorage.getItem('accessToken');
+    const token = session?.accessToken;
+    if (!token) throw new Error('No access token found');
+    
     setSendingEmail(true);
     try {
       await axios.post(
@@ -84,8 +93,10 @@ export default function InvoiceDetailPage() {
   };
 
   useEffect(() => {
-    fetchInvoice();
-  }, []);
+    if (session?.accessToken) {
+      fetchInvoice();
+    }
+  }, [session]);
 
   if (loading) return <div className="p-4 text-center">Loading invoice...</div>;
   if (!invoice) return null;

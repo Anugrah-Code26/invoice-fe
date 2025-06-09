@@ -7,6 +7,7 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useSession } from 'next-auth/react';
 
 type FormValues = {
   name: string;
@@ -17,6 +18,8 @@ type FormValues = {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { data: session } = useSession();
+
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -36,7 +39,7 @@ export default function ProfilePage() {
     onSubmit: async (values) => {
       try {
         setSubmitLoading(true);
-        const token = localStorage.getItem('accessToken');
+        const token = session?.accessToken;
         await axios.put(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/profile`,
           values,
@@ -57,7 +60,9 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
+        const token = session?.accessToken;
+        if (!token) throw new Error('No access token found');
+
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/profile`,
           {
@@ -71,8 +76,10 @@ export default function ProfilePage() {
         toast.error('Failed to load profile');
       }
     };
-    fetchProfile();
-  }, []);
+    if (session?.accessToken) {
+      fetchProfile();
+    }
+  }, [session]);
 
   if (loading) return <div className="p-4">Loading profile...</div>;
 

@@ -7,11 +7,13 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Client } from '@/types/client';
 import { toast } from 'react-toastify';
+import { useSession } from 'next-auth/react';
 
 export default function ClientForm() {
   const router = useRouter();
   const params = useSearchParams();
   const clientId = params.get('id');
+  const { data: session } = useSession();
 
   const [initialValues, setInitialValues] = useState<Client>({
     id: 0,
@@ -47,7 +49,9 @@ export default function ClientForm() {
       const fetchClient = async () => {
         try {
           setIsFetching(true);
-          const token = localStorage.getItem('accessToken');
+          const token = session?.accessToken;
+          if (!token) throw new Error('No access token found');
+          
           const response = await axios.get(
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/clients/${clientId}`,
             { headers: { Authorization: `Bearer ${token}` } }
@@ -60,9 +64,11 @@ export default function ClientForm() {
           setIsFetching(false);
         }
       };
-      fetchClient();
+      if (session?.accessToken) {
+        fetchClient();
+      }
     }
-  }, [clientId]);
+  }, [clientId, session]);
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -77,7 +83,7 @@ export default function ClientForm() {
     onSubmit: async (values) => {
       try {
         setIsSubmitting(true);
-        const token = localStorage.getItem('accessToken');
+        const token = session?.accessToken;
         if (!token) throw new Error('No access token found');
 
         if (clientId) {

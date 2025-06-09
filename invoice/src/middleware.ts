@@ -1,33 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from 'next-auth/middleware';
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get('accessToken')?.value;
+export default withAuth({
+  callbacks: {
+    authorized: ({ token, req }) => {
+      const { pathname } = req.nextUrl;
 
-  const url = request.nextUrl.pathname;
+      if (!token) return false;
 
-  const publicPaths = ['/login', '/register', '/'];
-  if (publicPaths.includes(url)) {
-    return NextResponse.next();
-  }
+      if (pathname.startsWith('/dashboard/admin') && token.role !== 'ADMIN') {
+        return false;
+      }
 
-  if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const role = payload.role || payload.roles;
-
-    if (url.startsWith('/dashboard/admin') && role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    return NextResponse.next();
-  } catch (err) {
-    console.error('Invalid token', err);
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-}
+      return true;
+    },
+  },
+  pages: {
+    signIn: '/login',
+  },
+});
 
 export const config = {
   matcher: [
@@ -36,5 +26,6 @@ export const config = {
     '/clients/:path*',
     '/products/:path*',
     '/invoices/:path*',
+    '/profile/:path*',
   ],
 };

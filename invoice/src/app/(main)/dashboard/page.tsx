@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useSession } from 'next-auth/react';
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
   const [invoiceCount, setInvoiceCount] = useState(0);
   const [paidCount, setPaidCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [clientCount, setClientCount] = useState(0);
 
-  const token = localStorage.getItem('accessToken');
+  const token = session?.accessToken;
+  if (!token) throw new Error('No access token found');
 
   const fetchData = async () => {
     const headers = { Authorization: `Bearer ${token}` };
@@ -24,7 +27,7 @@ export default function DashboardPage() {
 
     setInvoiceCount(invoices.length);
     setPaidCount(invoices.filter((i: any) => i.status === 'PAID').length);
-    setPendingCount(invoices.filter((i: any) => i.status !== 'PAID').length);
+    setPendingCount(invoices.filter((i: any) => i.status !== 'PENDING').length);
     setTotalRevenue(
       invoices
         .filter((i: any) => i.status === 'PAID')
@@ -35,8 +38,10 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (session?.accessToken) {
+      fetchData();
+    }
+  }, [session]);
 
   return (
     <div className="max-w-5xl mx-auto p-6">

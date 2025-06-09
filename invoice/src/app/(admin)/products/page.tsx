@@ -7,10 +7,12 @@ import { Product } from '@/types/product';
 import Link from 'next/link';
 import { FiEdit, FiTrash, FiLoader } from 'react-icons/fi';
 import { toast } from 'react-toastify';
+import { useSession } from 'next-auth/react';
 
 export default function ProductsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -20,25 +22,35 @@ export default function ProductsPage() {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const fetchProducts = async (
-    searchValue = search,
-    minPriceValue = minPrice,
-    maxPriceValue = maxPrice
-  ) => {
-    setLoading(true);
-    const token = localStorage.getItem('accessToken');
-
+  const fetchProducts = async (options?: {
+    search?: string, minPrice?: string, maxPrice?: string, updateUrl?: boolean
+  }) => {
     try {
-      const params: any = {};
-      if (searchValue.trim()) params.search = searchValue.trim();
-      if (minPriceValue.trim()) params.minPrice = Number(minPriceValue);
-      if (maxPriceValue.trim()) params.maxPrice = Number(maxPriceValue);
+      setLoading(true);
+      const token = session?.accessToken;
+      if (!token) throw new Error('No access token found');
 
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params,
-      });
+      const params = new URLSearchParams();
+
+      const searchFilter = options?.search !== undefined ? options.search : search;
+      const minPriceFilter = options?.minPrice !== undefined ? options.minPrice : minPrice;
+      const maxPriceFilter = options?.maxPrice !== undefined ? options.maxPrice : maxPrice;
+
+      if (searchFilter) params.append('search', searchFilter);
+      if (minPriceFilter) params.append('minPrice', minPriceFilter);
+      if (maxPriceFilter) params.append('maxPrice', maxPriceFilter);
+
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/products?${params.toString()}`, 
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
       setProducts(response.data.data);
+
+      if (options?.updateUrl) {
+        router.replace(`/products?${params.toString()}`, { scroll: false })
+      }
     } catch (error) {
       console.error('Failed to fetch products:', error);
       toast.error('Failed to fetch products');
@@ -48,27 +60,22 @@ export default function ProductsPage() {
     }
   };
 
-  const updateQueryParams = (searchValue: string, min: string, max: string) => {
-    const params = new URLSearchParams();
-    if (searchValue.trim()) params.set('search', searchValue.trim());
-    if (min.trim()) params.set('minPrice', min.trim());
-    if (max.trim()) params.set('maxPrice', max.trim());
-
-    router.replace(`/products?${params.toString()}`);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    updateQueryParams(search, minPrice, maxPrice);
-    fetchProducts(search, minPrice, maxPrice);
+    fetchProducts({
+      search,
+      minPrice,
+      maxPrice,
+      updateUrl: true
+    });
   };
 
   const handleReset = () => {
     setSearch('');
     setMinPrice('');
     setMaxPrice('');
-    router.replace('/products');
-    fetchProducts('', '', '');
+    router.replace(`/products`, { scroll: false });
+    fetchProducts({search: '', minPrice: '', maxPrice: '', updateUrl: true});
   };
 
   const openDeleteModal = (product: Product) => {
@@ -79,7 +86,9 @@ export default function ProductsPage() {
   const confirmDelete = async () => {
     if (!productToDelete) return;
 
-    const token = localStorage.getItem('accessToken');
+    const token = session?.accessToken;
+    if (!token) throw new Error('No access token found');
+
     try {
       await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/${productToDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -96,8 +105,10 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (session?.accessToken) {
+      fetchProducts();
+    }
+  }, [session]);
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl relative">
@@ -108,7 +119,7 @@ export default function ProductsPage() {
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="mb-6 space-y-4">
+      <form onSubmit={handleSearch} className="mb-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div className="flex flex-col">
             <label htmlFor="search" className="mb-1 text-sm font-medium text-gray-600">Search</label>
@@ -151,17 +162,11 @@ export default function ProductsPage() {
               className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900"
               disabled={loading}
             >
-              {loading && <FiLoader className="animate-spin" />}
-              Search
+              {loading ? <FiLoader className="animate-spin" /> : 'Search'}
             </button>
             <button
               type="button"
-              onClick={() => {
-                setSearch('');
-                setMinPrice('');
-                setMaxPrice('');
-                fetchProducts();
-              }}
+              onClick={handleReset}
               className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400"
               disabled={loading}
             >

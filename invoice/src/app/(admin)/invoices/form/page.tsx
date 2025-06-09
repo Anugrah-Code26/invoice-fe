@@ -9,16 +9,20 @@ import { toast } from 'react-toastify';
 import { FiTrash2 } from 'react-icons/fi';
 import { Client } from '@/types/client';
 import { Product } from '@/types/product';
+import { useSession } from 'next-auth/react';
 
 export default function InvoiceForm() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = session?.accessToken;
+      if (!token) throw new Error('No access token found');
+      
       const [clientRes, productRes] = await Promise.all([
         axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/clients`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -35,8 +39,10 @@ export default function InvoiceForm() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (session?.accessToken) {
+      fetchData();
+    }
+  }, [session]);
 
   const formik = useFormik({
     initialValues: {
@@ -60,7 +66,9 @@ export default function InvoiceForm() {
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('accessToken');
+        const token = session?.accessToken;
+        if (!token) throw new Error('No access token found');
+        
         await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices`, values, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -134,41 +142,77 @@ export default function InvoiceForm() {
             render={(arrayHelpers) => (
               <div className="space-y-4">
                 <label className="block font-medium text-gray-700">Items</label>
-                {values.items.map((item, index) => (
-                  <div key={index} className="flex gap-2 items-center text-gray-700">
-                    <select
-                      name={`items[${index}].productId`}
-                      value={item.productId}
-                      onChange={handleChange}
-                      className="border p-2 rounded w-full"
-                    >
-                      <option value="">-- Product --</option>
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
 
-                    <input
-                      type="number"
-                      name={`items[${index}].quantity`}
-                      value={item.quantity}
-                      onChange={handleChange}
-                      className="border p-2 rounded w-24 text-gray-700"
-                      min={1}
-                    />
+                <div className="grid grid-cols-6 gap-3 font-semibold text-sm text-gray-500">
+                  <div className="col-span-2">Product</div>
+                  <div>Quantity</div>
+                  <div>Price / Unit</div>
+                  <div>Sub Total</div>
+                  <div></div>
+                </div>
 
-                    <button
-                      type="button"
-                      onClick={() => arrayHelpers.remove(index)}
-                      className="text-red-600 hover:text-red-800"
-                      title="Remove Item"
+                {values.items.map((item, index) => {
+                  const selectedProduct = products.find(
+                    (p) => p.id === parseInt(item.productId)
+                  );
+                  const price = selectedProduct?.price || 0;
+                  const subtotal = price * item.quantity;
+
+                  return (
+                    <div
+                      key={index}
+                      className="grid grid-cols-6 gap-3 items-center text-gray-700"
                     >
-                      <FiTrash2 size={20} />
-                    </button>
-                  </div>
-                ))}
+                      <select
+                        name={`items[${index}].productId`}
+                        value={item.productId}
+                        onChange={handleChange}
+                        className="border p-2 rounded col-span-2"
+                      >
+                        <option value="">-- Product --</option>
+                        {products.map((p) => {
+                          const selectedProductIds = values.items
+                            .map((it, idx) => (idx !== index ? it.productId : null))
+                            .filter(Boolean);
+
+                          const isDisabled = selectedProductIds.includes(String(p.id));
+
+                          return (
+                            <option key={p.id} value={p.id} disabled={isDisabled}>
+                              {p.name}
+                            </option>
+                          );
+                        })}
+                      </select>
+
+                      <input
+                        type="number"
+                        name={`items[${index}].quantity`}
+                        value={item.quantity}
+                        onChange={handleChange}
+                        className="border p-2 rounded w-full"
+                        min={1}
+                      />
+
+                      <div className="text-sm text-gray-600">
+                        ${price.toFixed(2)}
+                      </div>
+
+                      <div className="text-sm font-medium">
+                        ${subtotal.toFixed(2)}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => arrayHelpers.remove(index)}
+                        className="text-red-600 hover:text-red-800"
+                        title="Remove Item"
+                      >
+                        <FiTrash2 size={20} />
+                      </button>
+                    </div>
+                  );
+                })}
 
                 <button
                   type="button"

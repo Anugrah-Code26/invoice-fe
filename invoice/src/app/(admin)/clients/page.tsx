@@ -7,10 +7,12 @@ import Link from 'next/link';
 import { toast } from 'react-toastify';
 import { FiEdit, FiLoader, FiTrash } from 'react-icons/fi';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 export default function ClientsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: session } = useSession();
 
   const [clients, setClients] = useState<Client[]>([]);
   const [name, setName] = useState(searchParams.get('name') || '');
@@ -25,7 +27,9 @@ export default function ClientsPage() {
   }) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
+      const token = session?.accessToken;
+      if (!token) throw new Error('No access token found');
+
       const params = new URLSearchParams();
 
       const nameFilter = options?.name !== undefined ? options.name : name
@@ -43,7 +47,7 @@ export default function ClientsPage() {
         }
       );
       setClients(response.data.data);
-      
+
       if (options?.updateUrl) {
         router.replace(`/clients?${params.toString()}`, { scroll: false })
       }
@@ -55,12 +59,19 @@ export default function ClientsPage() {
   };
 
   useEffect(() => {
-    fetchClients();
-  }, []);
+    if (session?.accessToken) {
+      fetchClients();
+    }
+  }, [session]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchClients();
+    fetchClients({
+      name,
+      email,
+      phoneNumber,
+      updateUrl: true
+    });
   };
 
   const handleReset = () => {
@@ -71,12 +82,6 @@ export default function ClientsPage() {
     fetchClients({name: '', email:'', phoneNumber:'', updateUrl: true});
   };
 
-  // useEffect( () => {
-  //   if (!loading) {
-  //     fetchClients()
-  //   }
-  // }, [name, email, phoneNumber]);
-
   const openDeleteModal = (client: Client) => {
     setClientToDelete(client);
     setShowModal(true);
@@ -85,7 +90,7 @@ export default function ClientsPage() {
   const handleDeleteConfirmed = async () => {
     if (!clientToDelete) return;
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = session?.accessToken;
       await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/clients/${clientToDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -153,8 +158,7 @@ export default function ClientsPage() {
               onClick={handleSearch}
               className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900"
             >
-              {loading && <FiLoader className="animate-spin" />}
-              Search
+              {loading ? <FiLoader className="animate-spin" /> : 'Search'}
             </button>
             <button
               type='button'
@@ -209,7 +213,6 @@ export default function ClientsPage() {
         </div>
       )}
 
-      {/* Delete Modal */}
       {showModal && clientToDelete && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">

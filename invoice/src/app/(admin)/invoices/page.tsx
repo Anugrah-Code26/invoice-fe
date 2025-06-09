@@ -9,6 +9,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import { AiOutlineEye } from 'react-icons/ai';
 import 'react-toastify/dist/ReactToastify.css';
 import { FiLoader } from 'react-icons/fi';
+import { useSession } from 'next-auth/react';
 
 const STATUS_OPTIONS = [
   { label: 'All', value: '' },
@@ -20,6 +21,7 @@ const STATUS_OPTIONS = [
 export default function InvoicesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: session } = useSession();
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoiceNumber, setInvoiceNumber] = useState(searchParams.get('invoiceNumber') || '');
@@ -28,16 +30,25 @@ export default function InvoicesPage() {
   const [status, setStatus] = useState(searchParams.get('status') || '');
   const [loading, setLoading] = useState(false);
 
-  const fetchInvoices = async () => {
+  const fetchInvoices = async (options?: {
+    invoiceNumber?: string, clientName?: string, date?: string, status?: string, updateUrl?: boolean
+  }) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = session?.accessToken;
+      if (!token) throw new Error('No access token found');
+
       const params = new URLSearchParams();
 
-      if (invoiceNumber) params.append('invoiceNumber', invoiceNumber);
-      if (clientName) params.append('clientName', clientName);
-      if (date) params.append('date', date);
-      if (status && status !== '') params.append('status', status);
+      const invoiceNumberFilter = options?.invoiceNumber !== undefined ? options.invoiceNumber : invoiceNumber;
+      const clientNameFilter = options?.clientName !== undefined ? options.clientName : clientName;
+      const dateFilter = options?.date !== undefined ? options.date : date;
+      const statusFilter = options?.status !== undefined ? options.status : status;
+
+      if (invoiceNumberFilter) params.append('invoiceNumber', invoiceNumberFilter);
+      if (clientNameFilter) params.append('clientName', clientNameFilter);
+      if (dateFilter) params.append('date', dateFilter);
+      if (statusFilter && statusFilter !== '') params.append('status', statusFilter);
 
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices?${params.toString()}`,
@@ -45,7 +56,10 @@ export default function InvoicesPage() {
       );
 
       setInvoices(response.data.data || []);
-      router.replace(`/invoices?${params.toString()}`, { scroll: false });
+
+      if (options?.updateUrl) {
+        router.replace(`/invoices?${params.toString()}`, { scroll: false });
+      }
     } catch (error: any) {
       toast.error(`Failed to fetch invoices: ${error.message || error}`);
     } finally {
@@ -54,12 +68,20 @@ export default function InvoicesPage() {
   };
 
   useEffect(() => {
-    fetchInvoices();
-  }, []);
+    if (session?.accessToken) {
+      fetchInvoices();
+    }
+  }, [session]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchInvoices();
+    fetchInvoices({
+      invoiceNumber,
+      clientName,
+      date,
+      status,
+      updateUrl: true
+    });
   };
 
   const handleReset = () => {
@@ -68,7 +90,13 @@ export default function InvoicesPage() {
     setDate('');
     setStatus('');
     router.replace(`/invoices`, { scroll: false });
-    fetchInvoices();
+    fetchInvoices({
+      invoiceNumber: '',
+      clientName: '',
+      date: '',
+      status: '',
+      updateUrl: true
+    });
   };
 
   return (
@@ -140,8 +168,7 @@ export default function InvoicesPage() {
               disabled={loading}
               className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900"
             >
-              {loading && <FiLoader className="animate-spin" />}
-              Search
+              {loading ? <FiLoader className="animate-spin" /> : 'Search'}
             </button>
             <button
               type="button"

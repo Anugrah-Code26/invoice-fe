@@ -8,11 +8,13 @@ import axios from 'axios';
 import { Product } from '@/types/product';
 import { toast } from 'react-toastify';
 import { FiLoader } from 'react-icons/fi';
+import { useSession } from 'next-auth/react';
 
 export default function ProductForm() {
   const router = useRouter();
   const params = useSearchParams();
   const productId = params.get('id');
+  const { data: session } = useSession();
 
   const [initialValues, setInitialValues] = useState<Product>({
     id: 0,
@@ -29,7 +31,9 @@ export default function ProductForm() {
       const fetchProduct = async () => {
         setLoading(true);
         try {
-          const token = localStorage.getItem('accessToken');
+          const token = session?.accessToken;
+          if (!token) throw new Error('No access token found');
+
           const response = await axios.get(
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/${productId}`,
             { headers: { Authorization: `Bearer ${token}` } }
@@ -42,9 +46,11 @@ export default function ProductForm() {
           setLoading(false);
         }
       };
-      fetchProduct();
+      if (session?.accessToken) {
+        fetchProduct();
+      }
     }
-  }, [productId]);
+  }, [productId, session]);
 
   const formik = useFormik<Product>({
     enableReinitialize: true,
@@ -57,7 +63,9 @@ export default function ProductForm() {
       id: Yup.number(),
     }),
     onSubmit: async (values) => {
-      const token = localStorage.getItem('accessToken');
+      const token = session?.accessToken;
+      if (!token) throw new Error('No access token found');
+
       setLoading(true);
       try {
         if (productId) {
